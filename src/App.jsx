@@ -188,6 +188,7 @@ function App() {
       }
       // Detecta mudanças nas casas
       let changedCells = [];
+      let debugDiffs = [];
       if (prevFrameRef.current) {
         const prev = prevFrameRef.current;
         for (let idx = 0; idx < cellCenters.length; idx++) {
@@ -198,7 +199,13 @@ function App() {
           const prevPixel = prev.getImageData(cx, cy, 1, 1).data;
           // Calcula diferença (simples: soma das diferenças absolutas RGB)
           const diff = Math.abs(curPixel[0] - prevPixel[0]) + Math.abs(curPixel[1] - prevPixel[1]) + Math.abs(curPixel[2] - prevPixel[2]);
-          if (diff > 60) changedCells.push(idx);
+          debugDiffs.push(diff);
+          if (diff > 40) changedCells.push(idx); // threshold mais sensível
+        }
+        // Log para depuração
+        if (changedCells.length > 0) {
+          console.log('Diferenças por casa:', debugDiffs);
+          console.log('Casas alteradas:', changedCells);
         }
         // Se exatamente 2 casas mudaram, tenta converter em lance
         if (changedCells.length === 2) {
@@ -211,7 +218,12 @@ function App() {
           const [fromIdx, toIdx] = changedCells;
           const move = { from: idxToAlg(fromIdx), to: idxToAlg(toIdx) };
           const result = chess.move(move);
-          if (result) setFen(chess.fen());
+          if (result) {
+            setFen(chess.fen());
+            console.log('Movimento detectado:', move, 'Novo FEN:', chess.fen());
+          } else {
+            console.log('Movimento inválido detectado:', move);
+          }
         }
       }
       // Desenha centros das casas
@@ -227,6 +239,14 @@ function App() {
         }
         ctx.fill();
         ctx.globalAlpha = 1.0;
+      }
+      // Exibe feedback visual no canvas
+      if (changedCells.length > 0) {
+        ctx.save();
+        ctx.font = 'bold 18px sans-serif';
+        ctx.fillStyle = 'red';
+        ctx.fillText(`Casas alteradas: ${changedCells.join(', ')}`, 10, 25);
+        ctx.restore();
       }
       // Salva frame atual para próxima comparação
       const newFrame = document.createElement('canvas');
@@ -299,6 +319,10 @@ function App() {
             ? 'OpenCV.js carregado! Pronto para detectar a grade do tabuleiro.'
             : 'Aguardando OpenCV.js...'}
         </small>
+        <div style={{ marginTop: 8, color: '#c00', fontSize: 14 }}>
+          <b>Dica:</b> Movimente as peças devagar e evite sombras fortes para melhor detecção.<br/>
+          Se o tabuleiro virtual não atualizar, observe o console do navegador para depuração.
+        </div>
       </div>
     </div>
   );
