@@ -250,34 +250,37 @@ function App() {
       <h1>Camera Chess MVP</h1>
       <p>Captura de vídeo para detecção do tabuleiro</p>
       {error && <div style={{ color: 'red' }}>{error}</div>}
-      <div style={{ display: 'flex', gap: 32 }}>
-        <div>
+      <div className="mobile-stack" style={{ display: 'flex', gap: 32, alignItems: 'flex-start', width: '100%', justifyContent: 'center' }}>
+        <div style={{ width: 480, maxWidth: '100%' }}>
           <video
             ref={videoRef}
             width={480}
             height={360}
             autoPlay
             playsInline
-            style={{ border: '2px solid #333', borderRadius: 8, marginBottom: 16 }}
+            className="mobile-media"
+            style={{ border: '2px solid #333', borderRadius: 8, marginBottom: 16, width: '100%', maxWidth: 480, height: 'auto' }}
           />
           <canvas
             ref={canvasRef}
             width={480}
             height={360}
-            style={{ border: '2px solid #888', borderRadius: 8, marginBottom: 16, display: 'block' }}
+            className="mobile-media"
+            style={{ border: '2px solid #888', borderRadius: 8, marginBottom: 16, display: 'block', width: '100%', maxWidth: 480, height: 'auto' }}
           />
           <button
             onClick={handleCapture}
             disabled={!cvLoaded || loadingCv}
+            className="mobile-btn"
             style={{ marginBottom: 16 }}
           >
             {loadingCv ? 'Carregando OpenCV...' : 'Capturar Frame'}
           </button>
         </div>
-        <div>
-          <Chessboard position={fen} boardWidth={360} />
-          <div style={{ marginTop: 12, fontSize: 12, color: '#444' }}>
-            <b>FEN:</b> <span style={{ wordBreak: 'break-all' }}>{fen}</span>
+        <div style={{ width: 360, maxWidth: '100%' }}>
+          <Chessboard position={fen} boardWidth={window.innerWidth < 600 ? Math.min(window.innerWidth - 32, 320) : 360} />
+          <div style={{ marginTop: 12, fontSize: 12, color: '#444', wordBreak: 'break-all' }}>
+            <b>FEN:</b> <span>{fen}</span>
           </div>
         </div>
       </div>
