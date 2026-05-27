@@ -18,6 +18,7 @@ function App() {
   const prevFrameRef = useRef(null); // Para armazenar o frame anterior
   const [chess] = useState(() => new Chess());
   const [fen, setFen] = useState('start');
+  const [debugInfo, setDebugInfo] = useState({ changedCells: [], diffs: [], move: null, moveResult: null });
 
   // Carregar OpenCV.js
   useEffect(() => {
@@ -189,6 +190,8 @@ function App() {
       // Detecta mudanças nas casas
       let changedCells = [];
       let debugDiffs = [];
+      let move = null;
+      let moveResult = null;
       if (prevFrameRef.current) {
         const prev = prevFrameRef.current;
         for (let idx = 0; idx < cellCenters.length; idx++) {
@@ -216,15 +219,18 @@ function App() {
             return file + rank;
           };
           const [fromIdx, toIdx] = changedCells;
-          const move = { from: idxToAlg(fromIdx), to: idxToAlg(toIdx) };
-          const result = chess.move(move);
-          if (result) {
+          move = { from: idxToAlg(fromIdx), to: idxToAlg(toIdx) };
+          moveResult = chess.move(move);
+          if (moveResult) {
             setFen(chess.fen());
             console.log('Movimento detectado:', move, 'Novo FEN:', chess.fen());
           } else {
             console.log('Movimento inválido detectado:', move);
           }
         }
+        setDebugInfo({ changedCells: [...changedCells], diffs: [...debugDiffs], move, moveResult });
+      } else {
+        setDebugInfo({ changedCells: [], diffs: [], move: null, moveResult: null });
       }
       // Desenha centros das casas
       for (let idx = 0; idx < cellCenters.length; idx++) {
@@ -241,13 +247,17 @@ function App() {
         ctx.globalAlpha = 1.0;
       }
       // Exibe feedback visual no canvas
-      if (changedCells.length > 0) {
-        ctx.save();
-        ctx.font = 'bold 18px sans-serif';
-        ctx.fillStyle = 'red';
-        ctx.fillText(`Casas alteradas: ${changedCells.join(', ')}`, 10, 25);
-        ctx.restore();
+      ctx.save();
+      ctx.font = 'bold 18px sans-serif';
+      ctx.fillStyle = changedCells.length === 2 ? 'green' : 'red';
+      ctx.fillText(`Casas alteradas: ${changedCells.join(', ')}`, 10, 25);
+      ctx.fillText(`Qtd: ${changedCells.length}`, 10, 50);
+      if (changedCells.length === 2) {
+        ctx.fillStyle = moveResult ? 'green' : 'orange';
+        ctx.fillText(`Lance: ${move ? move.from + '-' + move.to : ''}`, 10, 75);
+        ctx.fillText(moveResult ? 'Movimento válido!' : 'Movimento inválido!', 10, 100);
       }
+      ctx.restore();
       // Salva frame atual para próxima comparação
       const newFrame = document.createElement('canvas');
       newFrame.width = 480;
@@ -322,6 +332,22 @@ function App() {
         <div style={{ marginTop: 8, color: '#c00', fontSize: 14 }}>
           <b>Dica:</b> Movimente as peças devagar e evite sombras fortes para melhor detecção.<br/>
           Se o tabuleiro virtual não atualizar, observe o console do navegador para depuração.
+        </div>
+        <div style={{ marginTop: 16, background: '#222', color: '#fff', padding: 8, borderRadius: 8, fontSize: 13, maxWidth: 400, marginLeft: 'auto', marginRight: 'auto' }}>
+          <b>Painel de Depuração:</b><br/>
+          Casas alteradas: {debugInfo.changedCells.join(', ') || 'Nenhuma'}<br/>
+          Qtd: {debugInfo.changedCells.length}<br/>
+          {debugInfo.diffs.length > 0 && (
+            <>
+              Diferenças: <span style={{ wordBreak: 'break-all' }}>{debugInfo.diffs.map(d => d.toFixed(0)).join(', ')}</span><br/>
+            </>
+          )}
+          {debugInfo.move && (
+            <>
+              Lance detectado: <b>{debugInfo.move.from}-{debugInfo.move.to}</b><br/>
+              {debugInfo.moveResult ? <span style={{ color: 'lime' }}>Movimento válido!</span> : <span style={{ color: 'orange' }}>Movimento inválido!</span>}
+            </>
+          )}
         </div>
       </div>
     </div>
