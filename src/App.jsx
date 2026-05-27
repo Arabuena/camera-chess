@@ -16,6 +16,8 @@ function App() {
   const [cvLoaded, setCvLoaded] = useState(false);
   const [loadingCv, setLoadingCv] = useState(false);
   const prevFrameRef = useRef(null); // Para armazenar o frame anterior
+  const [threshold, setThreshold] = useState(40); // Threshold ajustável
+  const [recentChanges, setRecentChanges] = useState([]); // Filtro temporal
   const [chess] = useState(() => new Chess());
   const [fen, setFen] = useState('start');
   const [debugInfo, setDebugInfo] = useState({ changedCells: [], diffs: [], move: null, moveResult: null });
@@ -203,32 +205,43 @@ function App() {
           // Calcula diferença (simples: soma das diferenças absolutas RGB)
           const diff = Math.abs(curPixel[0] - prevPixel[0]) + Math.abs(curPixel[1] - prevPixel[1]) + Math.abs(curPixel[2] - prevPixel[2]);
           debugDiffs.push(diff);
-          if (diff > 40) changedCells.push(idx); // threshold mais sensível
+          if (diff > threshold) changedCells.push(idx); // threshold ajustável
         }
-        // Log para depuração
-        if (changedCells.length > 0) {
-          console.log('Diferenças por casa:', debugDiffs);
-          console.log('Casas alteradas:', changedCells);
-        }
-        // Se exatamente 2 casas mudaram, tenta converter em lance
-        if (changedCells.length === 2) {
-          // Mapeia idx para notação algebraica
-          const idxToAlg = idx => {
-            const file = String.fromCharCode(97 + (idx % 8));
-            const rank = 8 - Math.floor(idx / 8);
-            return file + rank;
-          };
-          const [fromIdx, toIdx] = changedCells;
-          move = { from: idxToAlg(fromIdx), to: idxToAlg(toIdx) };
-          moveResult = chess.move(move);
-          if (moveResult) {
-            setFen(chess.fen());
-            console.log('Movimento detectado:', move, 'Novo FEN:', chess.fen());
-          } else {
-            console.log('Movimento inválido detectado:', move);
+        // Filtro temporal: só aceita se as mesmas casas mudaram em 3 frames consecutivos
+        setRecentChanges(prev => {
+          const newArr = [...prev, changedCells];
+          if (newArr.length > 3) newArr.shift();
+          // Verifica se as últimas 3 são iguais e têm 2 casas
+          let confirmed = false;
+          if (
+            newArr.length === 3 &&
+            newArr.every(arr => arr.length === 2 && arr[0] === newArr[0][0] && arr[1] === newArr[0][1])
+          ) {
+            confirmed = true;
           }
-        }
-        setDebugInfo({ changedCells: [...changedCells], diffs: [...debugDiffs], move, moveResult });
+          // Só executa movimento se confirmado
+          if (confirmed) {
+            // Mapeia idx para notação algebraica
+            const idxToAlg = idx => {
+              const file = String.fromCharCode(97 + (idx % 8));
+              const rank = 8 - Math.floor(idx / 8);
+              return file + rank;
+            };
+            const [fromIdx, toIdx] = changedCells;
+            move = { from: idxToAlg(fromIdx), to: idxToAlg(toIdx) };
+            moveResult = chess.move(move);
+            if (moveResult) {
+              setFen(chess.fen());
+              console.log('Movimento detectado:', move, 'Novo FEN:', chess.fen());
+            } else {
+              console.log('Movimento inválido detectado:', move);
+            }
+            setDebugInfo({ changedCells: [...changedCells], diffs: [...debugDiffs], move, moveResult });
+          } else {
+            setDebugInfo({ changedCells: [...changedCells], diffs: [...debugDiffs], move: null, moveResult: null });
+          }
+          return newArr;
+        });
       } else {
         setDebugInfo({ changedCells: [], diffs: [], move: null, moveResult: null });
       }
@@ -324,7 +337,19 @@ function App() {
             className="mobile-media"
             style={{ border: '2px solid #888', borderRadius: 8, marginBottom: 16, display: 'block', width: '100%', maxWidth: 480, height: 'auto' }}
           />
-          {/* Captura automática ativada, botão removido */}
+          {/* Slider para threshold */}
+          <div style={{ margin: '8px 0', color: '#333', fontSize: 14 }}>
+            <label htmlFor="threshold-slider">Threshold: {threshold}</label>
+            <input
+              id="threshold-slider"
+              type="range"
+              min="10"
+              max="100"
+              value={threshold}
+              onChange={e => setThreshold(Number(e.target.value))}
+              style={{ width: 200, marginLeft: 12 }}
+            />
+          </div>
         </div>
         <div style={{ width: 360, maxWidth: '100%' }}>
           <Chessboard
@@ -351,6 +376,7 @@ function App() {
           <b>Painel de Depuração:</b><br/>
           Casas alteradas: {debugInfo.changedCells.join(', ') || 'Nenhuma'}<br/>
           Qtd: {debugInfo.changedCells.length}<br/>
+          Threshold: {threshold}<br/>
           {debugInfo.diffs.length > 0 && (
             <>
               Diferenças: <span style={{ wordBreak: 'break-all' }}>{debugInfo.diffs.map(d => d.toFixed(0)).join(', ')}</span><br/>
