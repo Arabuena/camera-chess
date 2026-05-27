@@ -1,7 +1,7 @@
 
 
 import { useRef, useEffect, useState } from 'react';
-import { Chess } from 'chess.js/esm';
+import { Chess } from 'chess.js';
 import Chessboard from 'chessboardjsx';
 
 // Caminho do OpenCV.js instalado via npm (opencv.js)
