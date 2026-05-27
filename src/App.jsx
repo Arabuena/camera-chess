@@ -73,8 +73,8 @@ function App() {
   }, []);
 
 
-  // Captura frame do vídeo, desenha no canvas e detecta linhas (grade)
-  const handleCapture = () => {
+  // Captura automática de frames
+  const processFrame = () => {
     if (!videoRef.current || !canvasRef.current || !window.cv) return;
     const ctx = canvasRef.current.getContext('2d');
     ctx.drawImage(videoRef.current, 0, 0, 480, 360);
@@ -130,7 +130,6 @@ function App() {
         if (pt) intersections.push(pt);
       }
     }
-
 
     // Agrupa interseções próximas (clustering simples)
     function clusterPoints(points, dist = 12) {
@@ -245,6 +244,23 @@ function App() {
     lines.delete();
   };
 
+  // Loop automático de captura
+  useEffect(() => {
+    let rafId;
+    function loop() {
+      if (cvLoaded && videoRef.current && canvasRef.current) {
+        processFrame();
+      }
+      rafId = requestAnimationFrame(loop);
+    }
+    if (cvLoaded) {
+      rafId = requestAnimationFrame(loop);
+    }
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [cvLoaded]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 32 }}>
       <h1>Camera Chess MVP</h1>
@@ -268,14 +284,7 @@ function App() {
             className="mobile-media"
             style={{ border: '2px solid #888', borderRadius: 8, marginBottom: 16, display: 'block', width: '100%', maxWidth: 480, height: 'auto' }}
           />
-          <button
-            onClick={handleCapture}
-            disabled={!cvLoaded || loadingCv}
-            className="mobile-btn"
-            style={{ marginBottom: 16 }}
-          >
-            {loadingCv ? 'Carregando OpenCV...' : 'Capturar Frame'}
-          </button>
+          {/* Captura automática ativada, botão removido */}
         </div>
         <div style={{ width: 360, maxWidth: '100%' }}>
           <Chessboard position={fen} boardWidth={window.innerWidth < 600 ? Math.min(window.innerWidth - 32, 320) : 360} />
