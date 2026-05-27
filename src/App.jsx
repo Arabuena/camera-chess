@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { Chess } from 'chess.js';
-import Chessboard from 'chessboardjsx';
+import { Chessboard } from 'react-chessboard';
 
 // Caminho do OpenCV.js instalado via npm (opencv.js)
 const OPENCV_URL = 'node_modules/opencv.js/opencv.js';
@@ -275,7 +275,7 @@ function App() {
           </button>
         </div>
         <div>
-          <Chessboard width={360} position={fen} />
+          <Chessboard position={fen} boardWidth={360} />
           <div style={{ marginTop: 12, fontSize: 12, color: '#444' }}>
             <b>FEN:</b> <span style={{ wordBreak: 'break-all' }}>{fen}</span>
           </div>
