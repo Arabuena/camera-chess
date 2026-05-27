@@ -291,6 +291,16 @@ function App() {
     };
   }, [cvLoaded]);
 
+  // Handler para arrastar peça no tabuleiro virtual
+  function onPieceDrop(sourceSquare, targetSquare) {
+    const move = chess.move({ from: sourceSquare, to: targetSquare });
+    if (move) {
+      setFen(chess.fen());
+      return true;
+    }
+    return false;
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 32 }}>
       <h1>Camera Chess MVP</h1>
@@ -317,7 +327,11 @@ function App() {
           {/* Captura automática ativada, botão removido */}
         </div>
         <div style={{ width: 360, maxWidth: '100%' }}>
-          <Chessboard position={fen} boardWidth={window.innerWidth < 600 ? Math.min(window.innerWidth - 32, 320) : 360} />
+          <Chessboard
+            position={fen}
+            boardWidth={window.innerWidth < 600 ? Math.min(window.innerWidth - 32, 320) : 360}
+            onPieceDrop={onPieceDrop}
+          />
           <div style={{ marginTop: 12, fontSize: 12, color: '#444', wordBreak: 'break-all' }}>
             <b>FEN:</b> <span>{fen}</span>
           </div>
